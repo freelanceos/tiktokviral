@@ -1,307 +1,449 @@
-// عناصر DOM
-document.addEventListener('DOMContentLoaded', function () {
-  // ضبط التاريخ والوقت في حقل timestamp
-  const now = new Date();
-  const options = {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  };
-  const timestampInput = document.getElementById('timestamp');
-  if (timestampInput) {
-    timestampInput.value = now.toLocaleString('ar-EG', options);
-  }
-  // تهيئة العداد التنازلي
-  initCountdown();
+// تكوين ثابت
+const CONFIG = {
+  COUNTDOWN_DAYS: 3,
+  MIN_PHONE_LENGTH: 8,
+  ANIMATION_DURATION: 2000,
+  COUNTER_INTERVAL: 50,
+  TESTIMONIAL_INTERVAL: 5000,
+  SCROLL_OFFSET: 100
+};
 
-  // تهيئة شرائح الشهادات
-  initTestimonialSlider();
-
-  // تهيئة الأسئلة الشائعة
-  initFAQ();
-
-  // تهيئة التحقق من صحة النموذج
-  initFormValidation();
-
-  // تهيئة عدادات الإحصائيات
-  initCounters();
+// تهيئة التطبيق
+document.addEventListener('DOMContentLoaded', () => {
+  initializeApp();
 });
 
-// دالة العداد التنازلي
-function initCountdown() {
-  // تعيين تاريخ انتهاء العرض (بعد 3 أيام من الآن)
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + 3);
+// دالة التهيئة الرئيسية
+function initializeApp() {
+  setupTimestamp();
+  initCountdown();
+  initTestimonialSlider();
+  initFAQ();
+  initFormValidation();
+  initCounters();
+  initScrollEffects();
+  initAnalytics();
+}
 
-  // تحديث العداد كل ثانية
-  const countdown = setInterval(function () {
+// إعداد الطابع الزمني
+function setupTimestamp() {
+  const timestampInput = document.getElementById('timestamp');
+  if (timestampInput) {
+    const now = new Date();
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    };
+    timestampInput.value = now.toLocaleString('ar-EG', options);
+  }
+}
+
+// العداد التنازلي المحسن
+function initCountdown() {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + CONFIG.COUNTDOWN_DAYS);
+
+  const updateCountdown = () => {
     const now = new Date().getTime();
     const distance = endDate - now;
 
-    // حساب الأيام والساعات والدقائق والثواني
+    if (distance < 0) {
+      clearInterval(countdown);
+      updateCountdownDisplay(0, 0, 0, 0);
+      return;
+    }
+
     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-    // عرض العداد
-    document.getElementById('days').innerHTML = days < 10 ? '0' + days : days;
-    document.getElementById('hours').innerHTML = hours < 10 ? '0' + hours : hours;
-    document.getElementById('minutes').innerHTML = minutes < 10 ? '0' + minutes : minutes;
-    document.getElementById('seconds').innerHTML = seconds < 10 ? '0' + seconds : seconds;
+    updateCountdownDisplay(days, hours, minutes, seconds);
+  };
 
-    // إذا انتهى العداد
-    if (distance < 0) {
-      clearInterval(countdown);
-      document.getElementById('days').innerHTML = '00';
-      document.getElementById('hours').innerHTML = '00';
-      document.getElementById('minutes').innerHTML = '00';
-      document.getElementById('seconds').innerHTML = '00';
-    }
-  }, 1000);
+  const countdown = setInterval(updateCountdown, 1000);
+  updateCountdown();
 }
 
-// دالة شرائح الشهادات
+// تحديث عرض العد التنازلي
+function updateCountdownDisplay(days, hours, minutes, seconds) {
+  const padNumber = num => num.toString().padStart(2, '0');
+  
+  document.getElementById('days').textContent = padNumber(days);
+  document.getElementById('hours').textContent = padNumber(hours);
+  document.getElementById('minutes').textContent = padNumber(minutes);
+  document.getElementById('seconds').textContent = padNumber(seconds);
+}
+
+// شريط الشهادات المحسن
 function initTestimonialSlider() {
   const testimonials = document.querySelectorAll('.testimonial-card');
   const dots = document.querySelectorAll('.slider-dot');
   let currentSlide = 0;
+  let autoSlideInterval;
 
-  // عرض الشريحة الحالية
-  function showSlide(index) {
-    testimonials.forEach(testimonial => {
-      testimonial.classList.remove('active');
-    });
-
-    dots.forEach(dot => {
-      dot.classList.remove('active');
-    });
+  const showSlide = (index) => {
+    testimonials.forEach(testimonial => testimonial.classList.remove('active'));
+    dots.forEach(dot => dot.classList.remove('active'));
 
     testimonials[index].classList.add('active');
     dots[index].classList.add('active');
     currentSlide = index;
-  }
 
-  // التبديل التلقائي للشرائح
-  setInterval(function () {
+    // تتبع التحويلات
+    trackEvent('testimonial_view', { slide_index: index });
+  };
+
+  const nextSlide = () => {
     currentSlide = (currentSlide + 1) % testimonials.length;
     showSlide(currentSlide);
-  }, 5000);
+  };
 
-  // التبديل اليدوي للشرائح
+  const startAutoSlide = () => {
+    stopAutoSlide();
+    autoSlideInterval = setInterval(nextSlide, CONFIG.TESTIMONIAL_INTERVAL);
+  };
+
+  const stopAutoSlide = () => {
+    if (autoSlideInterval) {
+      clearInterval(autoSlideInterval);
+    }
+  };
+
   dots.forEach((dot, index) => {
-    dot.addEventListener('click', function () {
+    dot.addEventListener('click', () => {
       showSlide(index);
+      startAutoSlide();
     });
   });
+
+  // التعامل مع تفاعل المستخدم
+  const sliderContainer = document.querySelector('.testimonials-slider');
+  sliderContainer.addEventListener('mouseenter', stopAutoSlide);
+  sliderContainer.addEventListener('mouseleave', startAutoSlide);
+
+  startAutoSlide();
 }
 
-// دالة الأسئلة الشائعة
+// الأسئلة الشائعة المحسنة
 function initFAQ() {
   const faqItems = document.querySelectorAll('.faq-item');
 
   faqItems.forEach(item => {
     const question = item.querySelector('.faq-question');
+    const answer = item.querySelector('.faq-answer');
 
-    question.addEventListener('click', function () {
+    question.addEventListener('click', () => {
+      const isOpen = item.classList.contains('active');
+
       // إغلاق جميع الأسئلة المفتوحة
       faqItems.forEach(otherItem => {
         if (otherItem !== item && otherItem.classList.contains('active')) {
-          otherItem.classList.remove('active');
-          otherItem.querySelector('.faq-toggle i').className = 'fas fa-plus';
+          toggleFAQItem(otherItem, false);
         }
       });
 
       // تبديل حالة السؤال الحالي
-      item.classList.toggle('active');
+      toggleFAQItem(item, !isOpen);
 
-      // تغيير أيقونة التبديل
-      const icon = item.querySelector('.faq-toggle i');
-      if (item.classList.contains('active')) {
-        icon.className = 'fas fa-minus';
-      } else {
-        icon.className = 'fas fa-plus';
-      }
+      // تتبع التحويلات
+      trackEvent('faq_toggle', { 
+        question: question.textContent.trim(),
+        action: !isOpen ? 'open' : 'close'
+      });
     });
   });
 }
 
-// دالة التحقق من صحة النموذج
+// تبديل حالة عنصر الأسئلة الشائعة
+function toggleFAQItem(item, open) {
+  const icon = item.querySelector('.faq-toggle i');
+  const answer = item.querySelector('.faq-answer');
+
+  if (open) {
+    item.classList.add('active');
+    icon.className = 'fas fa-minus';
+    answer.style.maxHeight = `${answer.scrollHeight}px`;
+  } else {
+    item.classList.remove('active');
+    icon.className = 'fas fa-plus';
+    answer.style.maxHeight = '0';
+  }
+}
+
+// التحقق من صحة النموذج المحسن
 function initFormValidation() {
   const form = document.getElementById('order-form');
+  if (!form) return;
 
-  if (form) {
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
+  const validators = {
+    name: {
+      validate: value => value.trim().length >= 3,
+      message: 'يجب أن يحتوي الاسم على 3 أحرف على الأقل'
+    },
+    email: {
+      validate: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      message: 'يرجى إدخال بريد إلكتروني صحيح'
+    },
+    phone: {
+      validate: value => value.trim().length >= CONFIG.MIN_PHONE_LENGTH && /^\d+$/.test(value),
+      message: 'يرجى إدخال رقم هاتف صحيح'
+    },
+    payment: {
+      validate: value => value !== '',
+      message: 'يرجى اختيار طريقة الدفع'
+    }
+  };
 
-      // التحقق من الحقول
-      let isValid = true;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    let isValid = true;
+    const formData = new FormData(form);
 
-      // التحقق من الاسم
-      const nameInput = document.getElementById('name');
-      const nameError = document.getElementById('name-error');
-
-      if (nameInput.value.trim() === '') {
-        nameError.textContent = 'يرجى إدخال الاسم الكامل';
-        nameError.style.display = 'block';
-        isValid = false;
-      } else {
-        nameError.style.display = 'none';
+    // التحقق من جميع الحقول
+    for (const [field, value] of formData.entries()) {
+      if (validators[field]) {
+        const { validate, message } = validators[field];
+        const isFieldValid = validate(value);
+        showFieldError(field, isFieldValid ? '' : message);
+        isValid = isValid && isFieldValid;
       }
+    }
 
-      // التحقق من البريد الإلكتروني
-      const emailInput = document.getElementById('email');
-      const emailError = document.getElementById('email-error');
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (isValid) {
+      submitForm(form, formData);
+    }
+  });
 
-      if (!emailPattern.test(emailInput.value)) {
-        emailError.textContent = 'يرجى إدخال بريد إلكتروني صحيح';
-        emailError.style.display = 'block';
-        isValid = false;
-      } else {
-        emailError.style.display = 'none';
-      }
+  // التحقق المباشر عند الكتابة
+  Object.keys(validators).forEach(field => {
+    const input = form.querySelector(`[name="${field}"]`);
+    if (input) {
+      input.addEventListener('input', () => {
+        const { validate, message } = validators[field];
+        showFieldError(field, validate(input.value) ? '' : message);
+      });
+    }
+  });
+}
 
-      // التحقق من رقم الهاتف
-      const phoneInput = document.getElementById('phone');
-      const phoneError = document.getElementById('phone-error');
+// عرض رسائل الخطأ
+function showFieldError(field, message) {
+  const errorElement = document.getElementById(`${field}-error`);
+  if (errorElement) {
+    errorElement.textContent = message;
+    errorElement.style.display = message ? 'block' : 'none';
+  }
+}
 
-      if (phoneInput.value.trim() === '' || phoneInput.value.length < 8) {
-        phoneError.textContent = 'يرجى إدخال رقم هاتف صحيح';
-        phoneError.style.display = 'block';
-        isValid = false;
-      } else {
-        phoneError.style.display = 'none';
-      }
+// إرسال النموذج
+async function submitForm(form, formData) {
+  const submitButton = form.querySelector('.submit-btn');
+  const originalText = submitButton.innerHTML;
 
-      // التحقق من طريقة الدفع
-      const paymentInput = document.getElementById('payment');
-      const paymentError = document.getElementById('payment-error');
+  try {
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+    submitButton.disabled = true;
 
-      if (paymentInput.value === '') {
-        paymentError.textContent = 'يرجى اختيار طريقة الدفع';
-        paymentError.style.display = 'block';
-        isValid = false;
-      } else {
-        paymentError.style.display = 'none';
-      }
+    // إضافة الطابع الزمني
+    formData.append('timestamp', new Date().toLocaleString('ar-EG'));
 
-      // إذا كانت جميع الحقول صحيحة
-      if (isValid) {
-        // تعيين تاريخ ووقت الإرسال
-        const now = new Date();
-        const options = {
-          weekday: 'long',     // اسم اليوم
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
-        };
+    const response = await sendToGoogleSheet(formData);
+    
+    if (response.ok) {
+      showSuccessMessage();
+      trackConversion('form_submit_success');
+      form.reset();
+    } else {
+      throw new Error('فشل إرسال البيانات');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showErrorMessage('حدث خطأ أثناء إرسال البيانات. يرجى المحاولة مرة أخرى.');
+    trackError('form_submit_error', error);
+  } finally {
+    submitButton.innerHTML = originalText;
+    submitButton.disabled = false;
+  }
+}
 
-        document.getElementById('timestamp').value = now.toLocaleString('ar-EG', options);
+// إرسال البيانات إلى جوجل شيت
+async function sendToGoogleSheet(formData) {
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxUXmqNjSWxKVqzgzxScth_yUUt4CfyEouOxXEUEac2XUl-6rIWmqtFL4r7qaLknwZwgA/exec';
+  
+  return fetch(scriptURL, {
+    method: 'POST',
+    body: formData,
+    mode: 'cors'
+  });
+}
 
-
-        // إرسال البيانات إلى جوجل شيت
-        sendToGoogleSheet(form);
-      }
-    });
-
-    // إغلاق نافذة النجاح
-    const closePopupBtn = document.querySelector('.close-popup');
-    if (closePopupBtn) {
-      closePopupBtn.addEventListener('click', function () {
-        const successPopup = document.getElementById('success-popup');
+// عرض رسالة النجاح
+function showSuccessMessage() {
+  const successPopup = document.getElementById('success-popup');
+  if (successPopup) {
+    successPopup.classList.add('show');
+    
+    const closeBtn = successPopup.querySelector('.close-popup');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
         successPopup.classList.remove('show');
       });
     }
   }
 }
 
-// دالة إرسال البيانات إلى جوجل شيت
-function sendToGoogleSheet(form) {
-  // الحصول على بيانات النموذج
-  const formData = new FormData(form);
-  const name = formData.get('name');
-  const email = formData.get('email');
-  const phone = formData.get('phone');
-  const payment = formData.get('payment');
-  const timestamp = formData.get('timestamp');
-
-  // رابط نشر تطبيق Google Apps Script
-  // سيتم استبداله بالرابط الفعلي بعد إنشاء التطبيق
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbxUXmqNjSWxKVqzgzxScth_yUUt4CfyEouOxXEUEac2XUl-6rIWmqtFL4r7qaLknwZwgA/exec';
-
-  // إرسال البيانات باستخدام Fetch API
-  fetch(scriptURL, {
-    method: 'POST',
-    body: formData
-  })
-    .then(response => {
-      if (response.ok) {
-        // إظهار رسالة النجاح
-        const successPopup = document.getElementById('success-popup');
-        successPopup.classList.add('show');
-
-        // إعادة تعيين النموذج
-        form.reset();
-      } else {
-        alert('حدث خطأ أثناء إرسال البيانات. يرجى المحاولة مرة أخرى.');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('حدث خطأ أثناء إرسال البيانات. يرجى المحاولة مرة أخرى.');
-    });
+// عرض رسالة الخطأ
+function showErrorMessage(message) {
+  // يمكن تخصيص طريقة عرض الخطأ هنا
+  alert(message);
 }
 
-// دالة عدادات الإحصائيات
+// تهيئة العدادات المحسنة
 function initCounters() {
   const counters = document.querySelectorAll('.counter');
+  const options = {
+    threshold: 0.5
+  };
 
-  counters.forEach(counter => {
-    const target = parseInt(counter.getAttribute('data-target'));
-    const duration = 2000; // مدة العد بالمللي ثانية
-    const step = Math.ceil(target / (duration / 50)); // خطوة العد
-    let current = 0;
-
-    const updateCounter = () => {
-      current += step;
-
-      if (current >= target) {
-        counter.textContent = target.toLocaleString();
-        clearInterval(timer);
-      } else {
-        counter.textContent = current.toLocaleString();
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        startCounter(entry.target);
+        observer.unobserve(entry.target);
       }
-    };
+    });
+  }, options);
 
-    // بدء العد بعد ثانيتين
-    setTimeout(() => {
-      const timer = setInterval(updateCounter, 50);
-    }, 2000);
+  counters.forEach(counter => observer.observe(counter));
+}
+
+// بدء العداد
+function startCounter(counter) {
+  const target = parseInt(counter.getAttribute('data-target'));
+  const increment = Math.ceil(target / (CONFIG.ANIMATION_DURATION / CONFIG.COUNTER_INTERVAL));
+  let current = 0;
+
+  const updateCounter = () => {
+    current += increment;
+    
+    if (current >= target) {
+      counter.textContent = formatNumber(target);
+      clearInterval(timer);
+    } else {
+      counter.textContent = formatNumber(current);
+    }
+  };
+
+  const timer = setInterval(updateCounter, CONFIG.COUNTER_INTERVAL);
+}
+
+// تنسيق الأرقام
+function formatNumber(number) {
+  return new Intl.NumberFormat('ar-EG').format(number);
+}
+
+// تأثيرات التمرير
+function initScrollEffects() {
+  const scrollElements = document.querySelectorAll('[data-aos]');
+  
+  const elementInView = (el, offset = 50) => {
+    const elementTop = el.getBoundingClientRect().top;
+    return elementTop <= window.innerHeight - offset;
+  };
+
+  const displayScrollElement = element => {
+    element.classList.add('aos-animate');
+  };
+
+  const hideScrollElement = element => {
+    element.classList.remove('aos-animate');
+  };
+
+  const handleScrollAnimation = () => {
+    scrollElements.forEach(el => {
+      if (elementInView(el, 50)) {
+        displayScrollElement(el);
+      } else {
+        hideScrollElement(el);
+      }
+    });
+  };
+
+  window.addEventListener('scroll', throttle(handleScrollAnimation, 50));
+  handleScrollAnimation();
+}
+
+// تتبع التحويلات
+function trackEvent(eventName, params = {}) {
+  try {
+    if (typeof gtag !== 'undefined') {
+      gtag('event', eventName, params);
+    }
+    // يمكن إضافة أنظمة تتبع أخرى هنا
+  } catch (error) {
+    console.error('Analytics Error:', error);
+  }
+}
+
+// تتبع التحويلات
+function trackConversion(conversionName) {
+  trackEvent('conversion', { type: conversionName });
+}
+
+// تتبع الأخطاء
+function trackError(errorType, error) {
+  trackEvent('error', {
+    type: errorType,
+    message: error.message
   });
 }
 
-// تمرير سلس للروابط الداخلية
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    e.preventDefault();
+// تهيئة التحليلات
+function initAnalytics() {
+  // إعداد تتبع مخصص
+  trackEvent('page_view', {
+    page_title: document.title,
+    page_location: window.location.href
+  });
+}
 
+// دالة مساعدة للحد من تكرار التنفيذ
+function throttle(func, limit) {
+  let inThrottle;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// التمرير السلس
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
     const targetId = this.getAttribute('href');
     const targetElement = document.querySelector(targetId);
 
     if (targetElement) {
       window.scrollTo({
-        top: targetElement.offsetTop - 100,
+        top: targetElement.offsetTop - CONFIG.SCROLL_OFFSET,
         behavior: 'smooth'
+      });
+
+      // تتبع النقرات على الروابط الداخلية
+      trackEvent('internal_link_click', {
+        link_id: targetId,
+        link_text: this.textContent.trim()
       });
     }
   });
