@@ -1,3 +1,5 @@
+import { supabase } from '../config/supabase.js';
+
 // تكوين ثابت
 const CONFIG = {
   COUNTDOWN_DAYS: 3,
