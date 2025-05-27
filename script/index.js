@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import { saveOrder } from '../services/database.js';
 
 // تكوين ثابت
 const CONFIG = {
@@ -439,9 +440,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
-
-// Import database service
-import { saveOrder } from '../services/database.js'
 
 // Form submission
 const orderForm = document.getElementById('order-form')
