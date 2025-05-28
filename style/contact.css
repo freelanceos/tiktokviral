@@ -68,7 +68,7 @@ img {
 .hero-section {
   position: relative;
   min-height: 50vh;
-  background: url('public/images/background.jpg') center/cover no-repeat;
+  background: url('assets/images/background.jpg') center/cover no-repeat;
   color: var(--light-color);
   overflow: hidden;
 }
