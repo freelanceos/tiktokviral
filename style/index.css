@@ -94,7 +94,7 @@ section {
 .hero-section {
   position: relative;
   min-height: 100vh;
-  background: url('images/background.jpg') center/cover no-repeat;
+  background: url('public/images/background.jpg') center/cover no-repeat;
   color: var(--light-color);
   overflow: hidden;
 }
