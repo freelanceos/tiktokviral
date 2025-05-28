@@ -1,4 +1,5 @@
-import { supabase } from 'config/supabase'
+
+import { supabase } from './config/supabase.js' // صحيح
 
 // Save order to database
 export const saveOrder = async (orderData) => {
