@@ -1,20 +1,20 @@
-
-import { supabase } from './config/supabase.js' // صحيح
+import { supabase } from '../config/supabase.js' // صحيح
 
 // Save order to database
 export const saveOrder = async (orderData) => {
     try {
+        // Convert FormData to regular object if needed
+        const order = orderData instanceof FormData ? {
+            name: orderData.get('name'),
+            email: orderData.get('email'),
+            phone: orderData.get('phone'),
+            payment_method: orderData.get('payment_method'),
+            timestamp: new Date().toISOString()
+        } : orderData;
+
         const { data, error } = await supabase
             .from('orders')
-            .insert([
-                {
-                    name: orderData.name,
-                    email: orderData.email,
-                    phone: orderData.phone,
-                    payment_method: orderData.payment,
-                    timestamp: new Date().toISOString()
-                }
-            ])
+            .insert([order])
 
         if (error) throw error
         return { success: true, data }
@@ -52,7 +52,8 @@ export const getOrderById = async (orderId) => {
         if (error) throw error
         return { success: true, data }
     } catch (error) {
-        console.error('Error fetching order:', error)
-        return { success: false, error: error.message }
+        console.error('Error saving order:', error)
+        return { success: false, error }
     }
+
 } 

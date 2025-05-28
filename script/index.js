@@ -198,7 +198,7 @@ function initFormValidation() {
       validate: value => value.trim().length >= CONFIG.MIN_PHONE_LENGTH && /^\d+$/.test(value),
       message: 'يرجى إدخال رقم هاتف صحيح'
     },
-    payment: {
+    payment_method: {
       validate: value => value !== '',
       message: 'يرجى اختيار طريقة الدفع'
     }
@@ -456,7 +456,7 @@ orderForm.addEventListener('submit', async (e) => {
     name: document.getElementById('name').value,
     email: document.getElementById('email').value,
     phone: document.getElementById('phone').value,
-    payment: document.getElementById('payment').value
+    payment_method: document.getElementById('payment_method').value
   }
 
   console.log('Form data:', formData) // Debug message
@@ -482,7 +482,7 @@ orderForm.addEventListener('submit', async (e) => {
       // Track successful submission
       trackEvent('form_submit_success', {
         email: formData.email,
-        payment_method: formData.payment
+        payment_method: formData.payment_method
       })
     } else {
       throw new Error(result.error || 'فشل حفظ الطلب')
